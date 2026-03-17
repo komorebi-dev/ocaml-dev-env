@@ -7,7 +7,7 @@ Le script [vm.sh](./vm.sh) permet de créer via la CLI de VirtualBox une VM en u
 Ce script est basé sur un script similaire fait par [@shaolin-peanut](https://github.com/shaolin-peanut) pour sa Piscine OCAML, lui même basé sur celui de [@t-h2o](https://github.com/t-h2o) pour son Inception
 
 > [!CAUTION]
-> Les paths de téléchargements sont spécifiquement faits pour les Linux (Ubuntu) de 42 Lausanne, modifier ces paths pour qu’ils conviennent a votre environnement.
+> Les paths de téléchargements sont spécifiquement faits pour les Linux (Ubuntu) de 42 Lausanne, modifier ces paths pour qu’ils conviennent à votre environnement.
 
 > [!NOTE]
 > Vous pouvez également changer de OS/.iso/.vdi en modifiant l'url de téléchargement
@@ -60,4 +60,7 @@ Pour le moment je n’ai pas eu à modifier ou ajouter des choses à l’image d
 
 [OCaml Docker - ocaml.org](https://ocaml.org/docs/ocaml-docker)
 
-[ocaml-devcontainer - github/tarides](https://github.com/tarides/ocaml-devcontainer)
+[OCaml repositories - docker hub](https://hub.docker.com/u/ocaml)
+
+
+Pour les devcontainer: [ocaml-devcontainer - github/tarides](https://github.com/tarides/ocaml-devcontainer), sur les ordis de l’école je n’ai pas réussi à lancer le container, l’image fait ~4.5 GB mais l’installation est très facile et le devcontainer devrait pouvoir être utilisé sur un ordi perso.
