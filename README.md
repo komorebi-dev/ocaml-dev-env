@@ -54,7 +54,7 @@ Ubuntu: https://sourceforge.net/projects/osboxes/files/v/vb/55-U-u/25.04/64bit.7
 
 [installing OCaml #for Linux - ocaml.org](https://ocaml.org/docs/installing-ocaml#for-linux)
 
-## dockerfile
+## Image Docker
 
 Pour le moment je n’ai pas eu à modifier ou ajouter des choses à l’image docker donc j’utilise un Makefile pour directement pull et run l’image
 
@@ -62,5 +62,11 @@ Pour le moment je n’ai pas eu à modifier ou ajouter des choses à l’image d
 
 [OCaml repositories - docker hub](https://hub.docker.com/u/ocaml)
 
+> [!NOTE]
+> La variable `VOLUME_PATH` est le path vers le dossier à utiliser comme source du volume (par défaut `/home/${USER}/Desktop/42-piscine-ocaml`)
+> Il est possible de modifier cette variable durant l’exécution d’une commande `make` en ajoutant `VOLUME_PATH=/new/path`, e.g. `make VOLUME_PATH=./` `make run VOLUME_PATH=./`
+
+> [!WARNING]
+> Le dossier source du volume (sur l’host) doit être read, write and executable par les `others`, pour que l’on puisse run `ocamlopt` sur les fichiers du volume et continuer à les modifier dans l’IDE. Il faut donc run sur l’host `chmod -R 757 [source volume]`
 
 Pour les devcontainer: [ocaml-devcontainer - github/tarides](https://github.com/tarides/ocaml-devcontainer), sur les ordis de l’école je n’ai pas réussi à lancer le container, l’image fait ~4.5 GB mais l’installation est très facile et le devcontainer devrait pouvoir être utilisé sur un ordi perso.

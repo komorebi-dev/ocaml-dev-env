@@ -1,5 +1,10 @@
 IMAGE = ocaml/opam:alpine-3.23-ocaml-4.12
 NAME = ocaml-piscine
+USER = ${shell whoami}
+VOLUME_PATH = /home/${USER}/Desktop/42-piscine-ocaml
+
+YELLOW = "\e[0;33m"
+RESET = "\e[0m"
 
 all: pull run
 
@@ -7,7 +12,14 @@ pull:
 	docker pull ${IMAGE}
 
 run:
-	docker run -it -v ${PWD}:/home/opam/piscine -w /home/opam/piscine --rm ${IMAGE}
+	@echo ${YELLOW} "The ${VOLUME_PATH} folder needs to have "
+	@echo "read, write and execute access for the 'Others', use: \n"
+	@echo "chmod -R 757 ${VOLUME_PATH}\n\n" ${RESET}
+	docker run -it --rm \
+	-v ${VOLUME_PATH}:/home/opam/piscine \
+	-w /home/opam/piscine \
+	--name ${NAME} \
+	${IMAGE}
 
 clean:
 	docker image rm ${IMAGE}
