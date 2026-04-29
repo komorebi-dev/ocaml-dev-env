@@ -73,15 +73,23 @@ add_shared_folder() {
     PWD=$(pwd)
     read -p "Enter path to use as shared folder [default: ${PWD}]: " SHARED_FOLDER
     SHARED_FOLDER=${SHARED_FOLDER:-$PWD}
+
     while [ ! -d "${SHARED_FOLDER}" ]; do
         echo -e "${RED}Folder does not exist. Please provide a valid shared folder path.${RESET}"
         read -p "Enter path to use as shared folder (default: ${PWD}): " SHARED_FOLDER
         SHARED_FOLDER=${SHARED_FOLDER:-$PWD}
     done
 
-    VBoxManage sharedfolder add "${VM_NAME}" --name "shared" --hostpath "${SHARED_FOLDER}" --automount
+    FOLDER_NAME=$(basename "${SHARED_FOLDER}")
+
+    # Sanitize the name
+    SAFE_NAME=$(echo "${FOLDER_NAME}" | sed 's/[^a-zA-Z0-9_-]/_/g')
+
+    echo -e "${GREEN}Using '${SAFE_NAME}' as the shared folder name.${RESET}"
+
+    VBoxManage sharedfolder add "${VM_NAME}" --name "${SAFE_NAME}" --hostpath "${SHARED_FOLDER}" --automount
     VBoxManage setextradata "${VM_NAME}" "VBoxInternal2/SharedFoldersEnableSymlinksCreate/${SHARED_FOLDER}" 1
-    echo -e "${GREEN}Shared folder added using ${SHARED_FOLDER}.${RESET}"
+    echo -e "${GREEN}Shared folder added successfully: '${SAFE_NAME}' -> '${SHARED_FOLDER}'.${RESET}"
 }
 
 start_vm() {

@@ -1,4 +1,4 @@
-IMAGE = ocaml/opam:alpine-3.23-ocaml-4.12
+IMAGE = ocaml/opam:ubuntu-22.04-ocaml-5.5
 NAME = ocaml-piscine
 USER = ${shell whoami}
 VOLUME_PATH = /home/${USER}/Desktop/42-piscine-ocaml
