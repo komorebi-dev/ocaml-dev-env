@@ -64,6 +64,7 @@ create_vm() {
     VBoxManage modifyvm "${VM_NAME}" --audio-driver none
     VBoxManage modifyvm "${VM_NAME}" --vram 32
     VBoxManage modifyvm "${VM_NAME}" --clipboard-mode=bidirectional
+    VBoxManage modifyvm "${VM_NAME}" --graphicscontroller=vmsvga
     echo -e "${GREEN}VirtualBox VM '${VM_NAME}' successfully created${RESET}"
 }
 
