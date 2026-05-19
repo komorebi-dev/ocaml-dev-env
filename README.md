@@ -15,6 +15,13 @@ Ce script est basé sur un script similaire fait par [@shaolin-peanut](https://g
 > [!WARNING]
 > Si vous changer l'url et donc d'OS/.iso/.vdi changer également toutes les variables en dessous de l’url de téléchargement pour qu’elles correspondent au nouvel OS/archive téléchargé
 
+> [!NOTE]
+> Copier les dossiers du shared folder dans un autre dossier (typiquement le home) permet d’optimiser la vitesse de compilation avec ocamlopt la ou je me trouvais dans certains cas avec la VM qui crash
+
+> [!WARNING]
+> Beaucoup de problèmes de collusion peuvent apparaître si vous créez des VM utilisant le même `iso`
+> Je conseille donc de n’avoir qu’une VM par `iso` lorsque l’on run le script même si celui-ci supporte normalement d’avoir plusieurs VM
+
 Ensuite le menu permet de sélectionner ce que l’on veut faire:
 
 1. télécharger l’archive avec l’image qui est dans la variable `URL_DOWNLOAD`, extract l’archive, va ouvrir le dossier de téléchargement et vous demande de l’extraire vous (possibilité d’évolution en utilisant `tar -xvf` ou autre)

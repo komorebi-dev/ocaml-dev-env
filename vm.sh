@@ -7,7 +7,7 @@ GREEN="\033[0;32m"
 RESET="\033[0m"
 YELLOW="\033[0;33m"
 DL_DIR="/goinfre/$(whoami)" # folder to use to download/extract ! goinfre is only on the mac at school !
-RAM_SIZE="8192"
+RAM_SIZE="4096"
 
 # Variables to fill, includes the URL to download the iso from, some folder name ...
 URL_DOWNLOAD="https://sourceforge.net/projects/osboxes/files/v/vb/55-U-u/25.04/64bit.7z/download"
@@ -18,6 +18,18 @@ EXTRACTED_DIR="${DL_DIR}/${DISTRO_NAME}/${COMPUTER_ARCHITECTURE}" # destination 
 VDI_NAME="${EXTRACTED_DIR}/Ubuntu 25.04 (64bit).vdi" # path + file name of the VDI in the extracted folder
 OS_TYPE="Ubuntu_64" # use 'VBoxManage list ostypes' to list the available OS types, use the ID field of the wanted OS
 VM_NAME="ubuntu-ocaml"
+
+
+list_existing_vms() {
+    existing_vm_list=$(VBoxManage list vms)
+    if [ -z "${existing_vm_list}" ]; then
+        echo -e "${RED}No existing VMs${RESET}\n"
+        main
+    else
+        echo "List of existing VMs:"
+        echo "${existing_vm_list}"
+    fi
+}
 
 
 download_vdi() {
@@ -36,8 +48,8 @@ download_vdi() {
             echo "VDI file not found."
             echo "Make sure ${VDI_NAME} match with the content extracted in ${EXTRACTED_DIR}"
             echo -e "${YELLOW}Open ${DL_DIR}?${RESET}"
-            read -p "Choice (y): " yn
-            if [ "$yn" == "y" ]; then
+            read -p "Choice (y/N): " yn
+            if [[ "$yn" == "y" || "$yn" == "Y" ]]; then
                 open "${DL_DIR}"
             else
                 echo "Make sure you extract the archive at ${DL_DIR} and the VDI file name matches with the variable VDI_NAME"
@@ -51,96 +63,148 @@ download_vdi() {
 }
 
 create_vm() {
-    if VBoxManage list vms | grep -q "\"${VM_NAME}\""; then
-        echo -e "${RED}VM '${VM_NAME}' already exists. Returning to menu.${RESET}"
+    read -p "Enter the name of the VM to create [default: ${VM_NAME}]: " input_name
+    input_name=${input_name:-$VM_NAME}
+
+    if VBoxManage list vms | grep -q "\"${input_name}\""; then
+        echo -e "${RED}VM '${input_name}' already exists. Returning to menu.${RESET}"
         main
     fi
 
-    echo -e "${YELLOW}Creating VirtualBox VM '${VM_NAME}'...${RESET}"
-    VBoxManage createvm --name "${VM_NAME}" --ostype "${OS_TYPE}" --register
-    VBoxManage modifyvm "${VM_NAME}" --memory "${RAM_SIZE}" --cpus 2 --nic1 nat
-    VBoxManage storagectl "${VM_NAME}" --name "SATA Controller" --add sata --controller IntelAHCI
-    VBoxManage storageattach "${VM_NAME}" --storagectl "SATA Controller" --port 0 --device 0 --type hdd --medium "${VDI_NAME}"
-    VBoxManage modifyvm "${VM_NAME}" --audio-driver none
-    VBoxManage modifyvm "${VM_NAME}" --vram 32
-    VBoxManage modifyvm "${VM_NAME}" --clipboard-mode=bidirectional
-    VBoxManage modifyvm "${VM_NAME}" --graphicscontroller=vmsvga
-    echo -e "${GREEN}VirtualBox VM '${VM_NAME}' successfully created${RESET}"
+    echo -e "${YELLOW}Creating VirtualBox VM '${input_name}'...${RESET}"
+
+    VBoxManage createvm --name "${input_name}" --ostype "${OS_TYPE}" --register
+    VBoxManage modifyvm "${input_name}" --memory "${RAM_SIZE}" --cpus 2 --nic1 nat
+    VBoxManage modifyvm "${input_name}" --nat-pf1 "Rule 1,tcp,127.0.0.1,2222,0.0.0.0,22"
+    VBoxManage storagectl "${input_name}" --name "SATA Controller" --add sata --controller IntelAHCI
+    VBoxManage storageattach "${input_name}" --storagectl "SATA Controller" --port 0 --device 0 --type hdd --medium "${VDI_NAME}"
+    VBoxManage modifyvm "${input_name}" --audio-driver none
+    VBoxManage modifyvm "${input_name}" --vram 32
+    VBoxManage modifyvm "${input_name}" --clipboard-mode=bidirectional
+    VBoxManage modifyvm "${input_name}" --graphicscontroller=vmsvga
+    echo -e "${GREEN}VirtualBox VM '${input_name}' successfully created${RESET}"
 }
 
 add_shared_folder() {
-    echo -e "${GREEN}Adding shared folder...${RESET}"
+    list_existing_vms
+
+    read -p "Which VM to add a shared folder to [default: ${VM_NAME}]: " target_vm
+    target_vm=${target_vm:-$VM_NAME}
+
+    if ! echo "${existing_vm_list}" | grep -q "\"${target_vm}\""; then
+        echo -e "${RED}${target_vm} is not an existing VM. Please provide a valid VM name.${RESET}"
+        add_shared_folder
+    fi
+
+    echo -e "${GREEN}Adding shared folder to '${target_vm}'...${RESET}"
 
     PWD=$(pwd)
-    read -p "Enter path to use as shared folder [default: ${PWD}]: " SHARED_FOLDER
-    SHARED_FOLDER=${SHARED_FOLDER:-$PWD}
-
-    while [ ! -d "${SHARED_FOLDER}" ]; do
-        echo -e "${RED}Folder does not exist. Please provide a valid shared folder path.${RESET}"
-        read -p "Enter path to use as shared folder (default: ${PWD}): " SHARED_FOLDER
+    while true; do
+        read -p "Enter path to use as shared folder [default: ${PWD}]: " SHARED_FOLDER
         SHARED_FOLDER=${SHARED_FOLDER:-$PWD}
+
+        while [ ! -d "${SHARED_FOLDER}" ]; do
+            echo -e "${RED}Folder does not exist. Please provide a valid shared folder path.${RESET}"
+            read -p "Enter path to use as shared folder (default: ${PWD}): " SHARED_FOLDER
+            SHARED_FOLDER=${SHARED_FOLDER:-$PWD}
+        done
+
+        FOLDER_NAME=$(basename "${SHARED_FOLDER}")
+
+        # Sanitize the name
+        SAFE_NAME=$(echo "${FOLDER_NAME}" | sed 's/[^a-zA-Z0-9_-]/_/g')
+
+        echo -e "${GREEN}Adding shared folder '${SAFE_NAME}' -> '${SHARED_FOLDER}' to VM '${target_vm}'.${RESET}"
+
+        VBoxManage sharedfolder add "${target_vm}" --name "${SAFE_NAME}" --hostpath "${SHARED_FOLDER}" --automount
+        VBoxManage setextradata "${target_vm}" "VBoxInternal2/SharedFoldersEnableSymlinksCreate/${SHARED_FOLDER}" 1
+        echo -e "${GREEN}Shared folder added successfully.${RESET}"
+
+        read -p "Add another shared folder to '${target_vm}'? (y/N): " more
+        more=${more:-N}
+        if [[ "${more}" != "y" && "${more}" != "Y" ]]; then
+            break
+        fi
     done
-
-    FOLDER_NAME=$(basename "${SHARED_FOLDER}")
-
-    # Sanitize the name
-    SAFE_NAME=$(echo "${FOLDER_NAME}" | sed 's/[^a-zA-Z0-9_-]/_/g')
-
-    echo -e "${GREEN}Using '${SAFE_NAME}' as the shared folder name.${RESET}"
-
-    VBoxManage sharedfolder add "${VM_NAME}" --name "${SAFE_NAME}" --hostpath "${SHARED_FOLDER}" --automount
-    VBoxManage setextradata "${VM_NAME}" "VBoxInternal2/SharedFoldersEnableSymlinksCreate/${SHARED_FOLDER}" 1
-    echo -e "${GREEN}Shared folder added successfully: '${SAFE_NAME}' -> '${SHARED_FOLDER}'.${RESET}"
 }
 
 start_vm() {
-    # https://www.virtualbox.org/manual/ch08.html#vboxmanage-startvm
-    # Start the VM with name ${VM_NAME}
-    VBoxManage startvm "${VM_NAME}"
-    echo -e "${GREEN}VM ${VM_NAME} started${RESET}"
-    echo "If a shared folder has been added it will be mounted at /media/sf_shared"
+    list_existing_vms
+
+    read -p "Which VM to start [default: ${VM_NAME}]: " target_vm
+    target_vm=${target_vm:-$VM_NAME}
+
+    if ! echo "${existing_vm_list}" | grep -q "\"${target_vm}\""; then
+        echo -e "${RED}${target_vm} is not an existing VM. Please provide a valid VM name.${RESET}"
+        start_vm
+    fi
+
+    read -p "Start VM '${target_vm}' headless? (y/N): " headless_choice
+    headless_choice=${headless_choice:-N}
+
+    if [[ "${headless_choice}" == "y" || "${headless_choice}" == "Y" ]]; then
+        echo -e "${YELLOW}Starting VM '${target_vm}' headless...${RESET}"
+        VBoxManage startvm "${target_vm}" --type headless
+    else
+        echo -e "${YELLOW}Starting VM '${target_vm}' with GUI...${RESET}"
+        VBoxManage startvm "${target_vm}"
+    fi
+
+    echo -e "${GREEN}VM ${target_vm} started${RESET}"
+    echo "If a shared folder has been added it will be mounted at /media/sf_<shared_folder_name> in the VM"
     echo -e "If the ISO comes from osboxes: ${GREEN}user => osboxes | password => osboxes.org (same for root)${RESET}"
 }
 
 poweroff_vm() {
-    running_vm=$(VBoxManage showvminfo "${VM_NAME}" | grep -q -c "running (since")
+    running_vm=$(VBoxManage list runningvms)
     if [ -z "${running_vm}" ]; then
-        VBoxManage controlvm "${VM_NAME}" poweroff
-        echo -e "${GREEN}VM ${VM_NAME} powered off${RESET}\n"
-    else
-        echo -e "${RED}No VM ${VM_NAME} to power off${RESET}\n"
-    fi
-}
-
-delete_vm() {
-    existing_vm=$(VBoxManage list vms)
-    if [ -z "${existing_vm}" ]; then
-        echo -e "${RED}No existing VMs to delete${RESET}\n"
+        echo -e "${RED}No running VMs to power off${RESET}\n"
         main
     fi
 
-    echo "List of existing VMs:"
-    echo "$existing_vm"
-    read -p "Which VM to delete: " VM_TO_DELETE
-    if ! echo "$existing_vm" | grep -q "${VM_TO_DELETE}"; then
-        echo -e "${RED}${VM_TO_DELETE} does not exist. Please provide a valid VM name.${RESET}"
+    echo "List of running VMs:"
+    echo "${running_vm}"
+
+    read -p "Which VM to power off [default: ${VM_NAME}]: " target_vm
+    target_vm=${target_vm:-$VM_NAME}
+
+    if ! echo "${running_vm}" | grep -q "${target_vm}"; then
+        echo -e "${RED}${target_vm} is not a running VM. Please provide a valid running VM name.${RESET}"
+        poweroff_vm
+    fi
+
+    echo "Powering off VM '${target_vm}'..."
+    VBoxManage controlvm "${target_vm}" poweroff
+    echo -e "${GREEN}VM '${target_vm}' powered off.${RESET}\n"
+}
+
+delete_vm() {
+    list_existing_vms
+
+    read -p "Which VM to delete [default: ${VM_NAME}]: " target_vm
+    target_vm=${target_vm:-$VM_NAME}
+
+    if ! echo "$existing_vm_list" | grep -q "${target_vm}"; then
+        echo -e "${RED}${target_vm} does not exist. Please provide a valid VM name.${RESET}"
         delete_vm
     fi
 
-    echo "Unregistering and deleting VM '${VM_TO_DELETE}'..."
+    echo "Unregistering and deleting VM '${target_vm}'..."
+
     # https://www.virtualbox.org/manual/ch08.html#vboxmanage-unregistervm
-    # Unregister a VM
-    # --delete -> automatically deletes some files related to the VM present in /home/${whoami}/VirtualBox VMs/${VM_NAME}
-    VBoxManage unregistervm "${VM_TO_DELETE}" --delete
-    echo -e "${GREEN}VM '${VM_TO_DELETE}' deleted.${RESET}"
+    # --delete -> automatically deletes some files related to the VM present in /home/${whoami}/VirtualBox VMs/${target_vm} and the VDI file
+    VBoxManage unregistervm "${target_vm}" #--delete
+    rm -rf "/home/$(whoami)/VirtualBox VMs/${target_vm}"
+
+    echo -e "${GREEN}VM '${target_vm}' deleted.${RESET}"
 
     echo "Use the 'Delete extracted archive folder' option to fully delete the '${DL_DIR}/${DISTRO_NAME}/' folder ..."
 }
 
 delete_extracted_archive_folder() {
     echo -e "${YELLOW}Delete the extracted archive folder '${DL_DIR}/${DISTRO_NAME}/'${RESET} ?"
-    read -p "Confirm (y): " confirmation
-    if [ "${confirmation}" == "y" ]; then
+    read -p "Confirm (y/N): " confirmation
+    if [[ "${confirmation}" == "y" || "${confirmation}" == "Y" ]]; then
         rm -rf "${DL_DIR}/${DISTRO_NAME}/"
         echo -e "${GREEN}Extracted archive folder deleted.${RESET}\n"
     else
