@@ -15,9 +15,10 @@ DISTRO_NAME="ubuntu" # name of the distro, used for later destinations folder
 COMPUTER_ARCHITECTURE="64bit" # most likely 64bit, corresponds to the name of the archive
 ARCHIVE_NAME="${DL_DIR}/${DISTRO_NAME}.7z" # destination folder of the download
 EXTRACTED_DIR="${DL_DIR}/${DISTRO_NAME}/${COMPUTER_ARCHITECTURE}" # destination folder of the extracted archive
-VDI_NAME="${EXTRACTED_DIR}/Ubuntu 25.04 (64bit).vdi" # path + file name of the VDI in the extracted folder
+VDI_NAME="${DL_DIR}/${COMPUTER_ARCHITECTURE}/Ubuntu Server 25.04 (64bit).vdi" # path + file name of the VDI in the extracted folder
 OS_TYPE="Ubuntu_64" # use 'VBoxManage list ostypes' to list the available OS types, use the ID field of the wanted OS
 VM_NAME="ubuntu-ocaml"
+SHARED_FOLDER_GUEST="/media/sf" # the shared folder will be mounted in the VM at /media/sf_<shared_folder_name>
 
 
 list_existing_vms() {
@@ -75,7 +76,7 @@ create_vm() {
 
     VBoxManage createvm --name "${input_name}" --ostype "${OS_TYPE}" --register
     VBoxManage modifyvm "${input_name}" --memory "${RAM_SIZE}" --cpus 2 --nic1 nat
-    VBoxManage modifyvm "${input_name}" --nat-pf1 "Rule 1,tcp,127.0.0.1,2222,0.0.0.0,22"
+    VBoxManage modifyvm "${input_name}" --natpf1 "Rule 1,tcp,127.0.0.1,2222,,22"
     VBoxManage storagectl "${input_name}" --name "SATA Controller" --add sata --controller IntelAHCI
     VBoxManage storageattach "${input_name}" --storagectl "SATA Controller" --port 0 --device 0 --type hdd --medium "${VDI_NAME}"
     VBoxManage modifyvm "${input_name}" --audio-driver none
@@ -116,7 +117,7 @@ add_shared_folder() {
 
         echo -e "${GREEN}Adding shared folder '${SAFE_NAME}' -> '${SHARED_FOLDER}' to VM '${target_vm}'.${RESET}"
 
-        VBoxManage sharedfolder add "${target_vm}" --name "${SAFE_NAME}" --hostpath "${SHARED_FOLDER}" --automount
+        VBoxManage sharedfolder add "${target_vm}" --name "${SAFE_NAME}" --hostpath "${SHARED_FOLDER}" --automount --auto-mount-point="${SHARED_FOLDER_GUEST}"
         VBoxManage setextradata "${target_vm}" "VBoxInternal2/SharedFoldersEnableSymlinksCreate/${SHARED_FOLDER}" 1
         echo -e "${GREEN}Shared folder added successfully.${RESET}"
 
