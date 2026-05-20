@@ -40,7 +40,15 @@ password: `osboxes.org` | same for `root` user
 
 Le script [commands.sh](./commands.sh) est à exécuter une fois que la VM est lancée et être passe `root` (`sudo su` et `osboxes.org` comme password). Ce script va installer des outils/dépendances nécessaires pour la piscine.
 
-Ubuntu: https://sourceforge.net/projects/osboxes/files/v/vb/55-U-u/25.04/64bit.7z/download
+Ubuntu Server : https://sourceforge.net/projects/osboxes/files/v/vb/59-U-u-svr/25.04/64bit.7z/download
+>[!NOTE]
+> Il faut installer les `guest additions` de VirtualBox lorsqu'on utilise Ubuntu Server
+> `sudo apt update`
+> `sudo apt install virtualbox-guest-utils virtualbox-guest-x11 -y`
+> `sudo reboot`
+> reprendre le processus habituel avec `commands.sh` mount a `/media/...`
+
+Ubuntu : https://sourceforge.net/projects/osboxes/files/v/vb/55-U-u/25.04/64bit.7z/download
 
 
 <details>
