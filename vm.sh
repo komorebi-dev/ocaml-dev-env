@@ -11,7 +11,7 @@ RAM_SIZE="4096"
 
 
 URL_DOWNLOAD="https://sourceforge.net/projects/osboxes/files/v/vb/59-U-u-svr/25.04/64bit.7z/download"
-COMPUTER_ARCHITECTURE="64bit" # most likely 64bit, corresponds to the name of the archive
+COMPUTER_ARCHITECTURE="64bit"
 ARCHIVE_NAME="ubuntu.7z" # file destination of the download
 ARCHIVE_PATH="${DL_DIR}/${ARCHIVE_NAME}" # full destination path of the downloaded archive
 OS_TYPE="Ubuntu_64" # use 'VBoxManage list ostypes' to list the available OS types, use the ID field of the wanted OS
